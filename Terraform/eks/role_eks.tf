@@ -1,11 +1,31 @@
-data "aws_iam_role" "cluster_role" {
-    name = "AmazonEKSAutoClusterRole"
+resource "aws_iam_role" "cluster_role" {
+  name = "Terraform_EKSClusterRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "Terraform_EKSClusterRole"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-    for_each = toset(var.eks_cluster_policies)
-    role = data.aws_iam_role.cluster_role.name
-    policy_arn = each.value
+  for_each   = toset(var.eks_cluster_policies)
+  role       = aws_iam_role.cluster_role.name
+  policy_arn = each.value
 }
 
 resource "aws_iam_role" "node_role" {
@@ -32,28 +52,28 @@ resource "aws_iam_role" "node_role" {
 
 
 resource "aws_iam_role_policy_attachment" "eks_node_policy" {
-    for_each = toset(var.eks_node_policies)
-    role = aws_iam_role.node_role.name
-    policy_arn = each.value
+  for_each   = toset(var.eks_node_policies)
+  role       = aws_iam_role.node_role.name
+  policy_arn = each.value
 }
 
 resource "aws_iam_role" "vpc_cni_pod_identity_role" {
   name = "Terraform_AmazonEKSPodIdentityAmazonVPCCNIRole"
 
   assume_role_policy = jsonencode({
-    
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "pods.eks.amazonaws.com"
-            },
-            "Action": [
-                "sts:AssumeRole",
-                "sts:TagSession"
-            ]
-        }
+
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "pods.eks.amazonaws.com"
+        },
+        "Action" : [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+      }
     ]
   })
 }

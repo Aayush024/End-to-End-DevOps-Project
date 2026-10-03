@@ -2,20 +2,20 @@ variable "region" {
   default = "ap-southeast-1"
 }
 variable "eks_name" {
-    default = "testing_k8s"
+  default = "testing_k8s"
 }
 
 variable "sub_ids" {
-  type        = list(string)
+  type = list(string)
 }
 
 variable "vpc_id" {
-  
+
 }
 
 variable "node_name" {
-    default = "test-node-group"
-  
+  default = "test-node-group"
+
 }
 
 variable "sg" {
@@ -32,10 +32,10 @@ variable "node_sg" {
 
 variable "eks_ingress_rule" {
   type = map(object({
-    port         = number
-    protocol     = string
-    cidr_block   = list(string)
-    description  = string
+    port        = number
+    protocol    = string
+    cidr_block  = list(string)
+    description = string
   }))
 }
 
@@ -60,5 +60,5 @@ variable "eks_node_policies" {
     "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
     "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
   ]
-  
+
 }

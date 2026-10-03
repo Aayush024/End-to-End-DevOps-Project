@@ -3,61 +3,74 @@ module "vpc" {
 }
 
 module "ec2" {
-  source = "./ec2"
-  vpc_id = module.vpc.vpc_id
+  source    = "./ec2"
+  vpc_id    = module.vpc.vpc_id
   subnet_id = module.vpc.subnet_ids
-  key = "singapure-key"
+  key       = "task-api-key"
   ec2_ingress_rule = {
-    "all" = {
-      port = 0
-      protocol = "-1"
-      cidr_block = ["0.0.0.0/0"]
-      description = "Allowing All Traffic"
-    }
     "SSH" = {
-      port = 22
-      protocol = "tcp"
-      cidr_block = ["0.0.0.0/0"]
-      description = "Allowing SSH traffic"
+      port        = 22
+      protocol    = "tcp"
+      cidr_block  = ["0.0.0.0/0"]
+      description = "Allow SSH"
+    }
+
+    "Jenkins" = {
+      port        = 8080
+      protocol    = "tcp"
+      cidr_block  = ["0.0.0.0/0"]
+      description = "Allow Jenkins"
+    }
+
+    "Grafana" = {
+      port        = 3000
+      protocol    = "tcp"
+      cidr_block  = ["0.0.0.0/0"]
+      description = "Allow Grafana"
+    }
+
+    "Prometheus" = {
+      port        = 9090
+      protocol    = "tcp"
+      cidr_block  = ["0.0.0.0/0"]
+      description = "Allow Prometheus"
     }
   }
 }
 
-module "dns" {
-  source = "./Route53_ACM"
-}
+
 
 module "eks" {
-  source = "./eks"
-  vpc_id = module.vpc.vpc_id
+  source  = "./eks"
+  vpc_id  = module.vpc.vpc_id
   sub_ids = module.vpc.subnet_ids
   eks_ingress_rule = {
     "all" = {
-      port = 0
-      protocol = "-1"
-      cidr_block = ["0.0.0.0/0"]
+      port        = 0
+      protocol    = "-1"
+      cidr_block  = ["0.0.0.0/0"]
       description = "Allowing All Traffic"
     }
     "SSH" = {
-      port = 22
-      protocol = "tcp"
-      cidr_block = ["0.0.0.0/0"]
+      port        = 22
+      protocol    = "tcp"
+      cidr_block  = ["0.0.0.0/0"]
       description = "Allowing SSH traffic"
     }
   }
-  depends_on = [ module.ec2 ]
+  depends_on = [module.ec2]
 }
 
 module "efs" {
-  source = "./efs"
-  vpc_id = module.vpc.vpc_id
+  source     = "./efs"
+  vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.subnet_ids
   efs_ingress_rule = {
     "efs_inbound" = {
-      port = 2049
-      protocol = "TCP"
-      cidr_blocks = []
-      description = "Allow NFS access from EKS nodes"
+      port           = 2049
+      protocol       = "TCP"
+      cidr_blocks    = []
+      description    = "Allow NFS access from EKS nodes"
       security_group = [module.eks.security_group]
     }
   }
