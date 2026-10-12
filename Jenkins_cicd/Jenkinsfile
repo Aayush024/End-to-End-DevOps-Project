@@ -66,6 +66,31 @@ pipeline {
                 '''
             }
         }
+
+        
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                    aws eks update-kubeconfig \
+                      --name testing_k8s \
+                      --region "$AWS_REGION"
+
+                    kubectl set image \
+                      deployment/django-deployment \
+                      django="$FULL_IMAGE" \
+                      -n dev
+
+                    kubectl rollout status \
+                      deployment/django-deployment \
+                      -n dev \
+                      --timeout=180s
+
+                    kubectl get deployment django-deployment -n dev
+                    kubectl get pods -n dev
+                '''
+            }
+        }
+
     }
 
     post {
