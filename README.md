@@ -1,374 +1,810 @@
-Building an End-to-End DevOps Project on AWS using Terraform, Kubernetes, Jenkins (CI/CD), GitOps, ArgoCD with Full Prometheus Monitoring & Grafana Visualization
+# End-to-End Django DevOps Project on AWS
 
-In this project, I build a full end-to-end DevOps project on AWS with GitOps workflow. The entire infrastructure was provisioned using Terraform, with state and lock management in AWS S3. The application code is managed on GitHub, and a webhook triggers Jenkins to clone the repo, build a Docker image, push it to Amazon ECR, and update a GitOps-managed repo. ArgoCD watches this repo and automatically deploys to Amazon EKS, using Kubernetes Deployments for app pods and StatefulSets for database pods, backed by Amazon EFS for persistent storage. External access is routed via an Ingress Controller using AWS ALB, secured by AWS Certificate Manager (ACM) and Route 53 for DNS. The entire stack is monitored by Prometheus and visualized through Grafana, with RBAC controlling access and alerts sent via email for any failures in Jenkins pipelines or unhealthy services. 
+A hands-on DevOps project demonstrating how to containerize, deploy, automate, and monitor a Django web application using AWS, Terraform, Docker, Kubernetes, Jenkins, and Prometheus/Grafana.
 
-The tech stack includes Terraform, GitHub, Jenkins, Docker, ArgoCD, Helm, Kubernetes, AWS EKS, ECR, EFS, ALB, ACM, Route 53, Prometheus, Grafana, ConfigMap, Secrets, RBAC, and more — delivering a robust, automated, scalable, and secure DevOps pipeline.
-
-![DevOps](https://github.com/user-attachments/assets/9cdbbd38-930b-4b7e-87f7-dd3e98c25f4a)
-
-
-
-
-## 📋 Table of Contents
+## Table of Contents
 
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Detailed Setup Guide](#detailed-setup-guide)
-- [Monitoring & Alerts](#monitoring--alerts)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+- [1. Run the Application Locally](#1-run-the-application-locally)
+- [2. Build and Test the Docker Image](#2-build-and-test-the-docker-image)
+- [3. Provision AWS Infrastructure with Terraform](#3-provision-aws-infrastructure-with-terraform)
+- [4. Configure Kubernetes and EKS](#4-configure-kubernetes-and-eks)
+- [5. Deploy the Application](#5-deploy-the-application)
+- [6. Jenkins CI/CD Pipeline](#6-jenkins-cicd-pipeline)
+- [7. Prometheus and Grafana Monitoring](#7-prometheus-and-grafana-monitoring)
+- [8. Validation and Troubleshooting](#8-validation-and-troubleshooting)
+- [Security Best Practices](#security-best-practices)
+- [Project Status](#project-status)
 
-## 🎯 Project Overview
+## Project Overview
 
-This project implements a complete GitOps workflow on AWS with automated infrastructure provisioning, continuous integration/deployment, and comprehensive monitoring. The application is a Python Django web application with MySQL database, deployed on Amazon EKS with persistent storage using EFS.
+The project uses a Django web application with a MySQL database to demonstrate a practical cloud-native delivery workflow.
 
-### Key Features:
-- **Infrastructure as Code**: Complete AWS infrastructure managed with Terraform
-- **CI/CD Pipeline**: Jenkins automated build and deployment pipeline
-- **GitOps Workflow**: ArgoCD for Kubernetes deployment automation
-- **Container Orchestration**: Kubernetes with EKS for scalable deployments
-- **Persistent Storage**: EFS-backed storage for database and application data
-- **Load Balancing**: AWS ALB with SSL termination via ACM
-- **Monitoring**: Prometheus metrics collection with Grafana visualization
-- **Security**: RBAC, secrets management, and network security groups
+The infrastructure was provisioned with Terraform, container images were stored in Amazon ECR, and the application was deployed to Amazon EKS. Jenkins automated the build and deployment workflow, while Prometheus and Grafana were used for monitoring and visualization.
 
-## 🏗️ Architecture
+### Key learning outcomes
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   GitHub Repo   │    │   Jenkins CI    │    │   ArgoCD CD     │
-│                 │───▶│                 │───▶│                 │
-│  Application    │    │  Build & Push   │    │  Deploy to EKS  │
-│  Code           │    │  to ECR         │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Prometheus    │    │   Grafana       │    │   EKS Cluster   │
-│   Monitoring    │◀───│   Dashboard     │    │                 │
-│                 │    │                 │    │  App + DB Pods  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Route 53      │    │   ACM           │    │   EFS Storage   │
-│   DNS           │───▶│   SSL Cert      │───▶│   Persistent    │
-│                 │    │                 │    │   Volumes       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+- Infrastructure as Code using Terraform.
+- Docker image creation and container management.
+- AWS infrastructure, IAM, networking, ECR, EKS, and EFS.
+- Kubernetes Deployments, Services, StatefulSets, Secrets, and persistent storage.
+- Jenkins pipeline automation.
+- Monitoring with Prometheus and Grafana.
+- Troubleshooting application, database, networking, and deployment failures.
+- AWS resource cleanup and cost awareness.
 
-## 🛠️ Tech Stack
+## Architecture
 
-### Infrastructure & DevOps
-- **Terraform** - Infrastructure as Code
-- **AWS EKS** - Kubernetes cluster
-- **AWS ECR** - Container registry
-- **AWS EFS** - Persistent storage
-- **AWS ALB** - Load balancer
-- **AWS ACM** - SSL certificates
-- **Route 53** - DNS management
+```text
+Developer
+    |
+    v
+GitHub Repository
+    |
+    v
+Jenkins CI/CD
+    |
+    +---- Build Docker Image
+    |
+    +---- Push Image to Amazon ECR
+    |
+    v
+Amazon EKS
+    |
+    +---- Django Deployment
+    |       |
+    |       v
+    |    Django Service
+    |
+    +---- MySQL StatefulSet
+    |       |
+    |       v
+    |    Persistent Storage
+    |
+    v
+Application and Database
 
-### CI/CD & GitOps
-- **Jenkins** - CI/CD pipeline
-- **ArgoCD** - GitOps deployment
-- **Docker** - Containerization
-- **GitHub** - Source code & GitOps repo
-
-### Monitoring & Observability
-- **Prometheus** - Metrics collection
-- **Grafana** - Visualization & dashboards
-- **AlertManager** - Alert management
-
-### Application
-- **Python Django** - Web application
-- **MySQL** - Database
-- **Kubernetes** - Container orchestration
-
-## 📋 Prerequisites
-
-Before starting, ensure you have the following:
-
-### Required Software
-- [Terraform](https://www.terraform.io/downloads.html) (v1.0+)
-- [AWS CLI](https://aws.amazon.com/cli/) (v2.0+)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) (v1.24+)
-- [Docker](https://www.docker.com/products/docker-desktop/) (v20.0+)
-- [Git](https://git-scm.com/downloads) (v2.30+)
-
-### AWS Account Requirements
-- AWS account with appropriate permissions
-- S3 bucket for Terraform backend (create manually first)
-- Domain name for Route 53 (optional but recommended)
-
-### GitHub Requirements
-- GitHub account
-- Personal access token with repo permissions
-- Two repositories:
-  - Main application repository
-  - GitOps repository for Kubernetes manifests
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/Building-an-End-to-End-DevOps-Project-on-AWS.git
-cd Building-an-End-to-End-DevOps-Project-on-AWS
+Monitoring:
+Prometheus ---> Grafana
 ```
 
-### 2. Configure AWS Credentials
-```bash
-aws configure
-# Enter your AWS Access Key ID, Secret Access Key, and default region (ap-southeast-1)
+Terraform provisions the cloud infrastructure. Jenkins builds and publishes application images, Kubernetes runs the application, and Prometheus/Grafana provide monitoring and visualization.
+
+> Note: This diagram represents the project workflow. ArgoCD-based GitOps, public ingress/domain configuration, and complete application-level monitoring are not claimed as finished implementations.
+
+## Technology Stack
+
+| Category | Technologies |
+|---|---|
+| Application | Python, Django |
+| Database | MySQL |
+| Version control | Git, GitHub |
+| Containerization | Docker |
+| Infrastructure as Code | Terraform |
+| Cloud | AWS |
+| Container registry | Amazon ECR |
+| Orchestration | Kubernetes, Amazon EKS |
+| Storage | Amazon EFS |
+| CI/CD | Jenkins |
+| Monitoring | Prometheus, Grafana |
+| Operating environment | Windows, PowerShell, Amazon Linux |
+
+## Project Structure
+
+```text
+End-to-End-DevOps-Project/
+├── Jenkins_cicd/
+│   ├── manage.py
+│   ├── Dockerfile
+│   ├── app/
+│   └── basic/
+├── Terraform/
+│   ├── provider.tf
+│   ├── main.tf
+│   ├── vpc/
+│   ├── ec2/
+│   ├── eks/
+│   ├── efs/
+│   ├── ecr/
+│   └── Route53_ACM/
+├── Kubernetes with ArgoCD/
+├── kubernetes-manual/
+├── jenkins-deploy-rbac.yaml
+├── aws-auth-backup.yaml
+├── .gitignore
+└── README.md
 ```
 
-### 3. Create S3 Backend Bucket
-```bash
-aws s3 mb s3://terraform-devops-backend-file --region ap-southeast-1
+The exact contents of individual Terraform modules and Kubernetes directories may evolve as the project is updated.
+
+## Prerequisites
+
+Install the following tools on your development machine:
+
+- Git
+- Python and pip
+- Docker Desktop
+- AWS CLI
+- Terraform
+- `kubectl`
+
+You also need an AWS account, configured AWS credentials, suitable IAM permissions, and an EC2 key pair if your Terraform configuration uses SSH access.
+
+Verify the installations:
+
+```powershell
+git --version
+python --version
+pip --version
+docker --version
+aws --version
+terraform version
+kubectl version --client
 ```
 
-### 4. Deploy Infrastructure
-```bash
-cd Terraform
+Check your AWS identity and region:
+
+```powershell
+aws sts get-caller-identity
+aws configure list
+aws configure get region
+```
+
+The project was developed in the Mumbai AWS Region:
+
+```text
+ap-south-1
+```
+
+Never put AWS access keys, passwords, private keys, or database credentials in this repository.
+
+## 1. Run the Application Locally
+
+Open PowerShell in the repository root:
+
+```powershell
+cd "$HOME\Downloads\End-to-End-DevOps\End-to-End-DevOps-Project"
+```
+
+Move to the Django application directory:
+
+```powershell
+cd .\Jenkins_cicd
+```
+
+Create and activate a virtual environment:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Install the dependencies if a `requirements.txt` is present:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Apply Django migrations:
+
+```powershell
+python manage.py migrate
+```
+
+Start the development server:
+
+```powershell
+python manage.py runserver
+```
+
+Open the application:
+
+```text
+http://127.0.0.1:8000/
+```
+
+Test the HTTP response from another PowerShell terminal:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8000/ -UseBasicParsing
+```
+
+Stop the local server with `Ctrl+C`.
+
+**Database note:** The application has been configured to use MySQL in the Kubernetes deployment. Local execution requires the database configuration and MySQL service expected by the Django settings.
+
+## 2. Build and Test the Docker Image
+
+From the repository root:
+
+```powershell
+cd "$HOME\Downloads\End-to-End-DevOps\End-to-End-DevOps-Project"
+```
+
+Build the image using the application's Dockerfile:
+
+```powershell
+docker build -t django-web-app:local .\Jenkins_cicd
+```
+
+List local images:
+
+```powershell
+docker images
+```
+
+Run a container if the image is designed to start the application directly:
+
+```powershell
+docker run --rm -p 8000:8000 django-web-app:local
+```
+
+Test the endpoint:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8000/ -UseBasicParsing
+```
+
+This container command tests the web application process. A separate MySQL service or correctly configured database environment may be required for database-dependent pages to work.
+
+Useful Docker commands:
+
+```powershell
+docker ps
+docker ps -a
+docker logs <container-name-or-id>
+docker stop <container-name-or-id>
+docker rmi django-web-app:local
+```
+
+Replace placeholders such as `<container-name-or-id>` with the actual value.
+
+## 3. Provision AWS Infrastructure with Terraform
+
+Terraform configuration is stored in the `Terraform/` directory.
+
+The infrastructure developed for this project included:
+
+- VPC, subnets, routing, and security groups.
+- Jenkins and monitoring EC2 instances.
+- Amazon ECR.
+- Amazon EKS and a managed worker node group.
+- Amazon EFS and the EFS CSI driver.
+- IAM roles and policies.
+- An S3 backend for Terraform state.
+
+### Initialize Terraform
+
+```powershell
+cd "$HOME\Downloads\End-to-End-DevOps\End-to-End-DevOps-Project\Terraform"
+```
+
+Initialize the working directory:
+
+```powershell
 terraform init
+```
+
+Check the configuration:
+
+```powershell
+terraform fmt -recursive
+terraform validate
+```
+
+Review the Terraform state:
+
+```powershell
+terraform workspace show
+terraform state list
+```
+
+Create and review a plan:
+
+```powershell
 terraform plan
+```
+
+Apply the plan only after reviewing the proposed changes:
+
+```powershell
 terraform apply
 ```
 
-### 5. Configure Jenkins & ArgoCD
-Follow the detailed setup guide below for complete configuration.
+Type `yes` only after verifying the resources, region, and expected cost.
 
-## 📖 Detailed Setup Guide
+### Terraform state backend
 
-### Phase 1: Infrastructure Setup
+The project used an S3 backend in `ap-south-1`, with the state key:
 
-#### Step 1: Configure Terraform Backend
-1. Update the S3 bucket name in `Terraform/provider.tf`:
-```hcl
-terraform {
-    backend "s3" {
-        bucket = "your-terraform-backend-bucket"
-        region = "ap-southeast-1"
-        key = "terraform.tfstate"
-        encrypt = true
-        use_lockfile = true
-    }
-}
+```text
+end-to-end-devops/terraform.tfstate
 ```
 
-#### Step 2: Deploy AWS Infrastructure
+Check the backend configuration in `Terraform/provider.tf` before initializing or rebuilding.
+
+Useful commands:
+
+```powershell
+terraform state list
+terraform state show <resource-address>
+terraform output
+```
+
+**Important:** Some AWS resources were manually deleted during cost cleanup. The existing Terraform state may therefore contain stale resource records. Before rebuilding, reconcile the state with the actual AWS resources and review `terraform plan`. Do not blindly apply the old state or run `terraform destroy` against it.
+
+## 4. Configure Kubernetes and EKS
+
+The EKS cluster used during the project was named `testing_k8s`.
+
+After the cluster has been recreated, configure local `kubectl` access:
+
+```powershell
+aws eks update-kubeconfig `
+  --region ap-south-1 `
+  --name testing_k8s
+```
+
+Verify the cluster connection:
+
+```powershell
+kubectl cluster-info
+kubectl get nodes -o wide
+kubectl get namespaces
+```
+
+Check the system pods:
+
+```powershell
+kubectl get pods -n kube-system
+```
+
+Check EKS from the AWS CLI:
+
+```powershell
+aws eks describe-cluster `
+  --region ap-south-1 `
+  --name testing_k8s `
+  --query "cluster.{Name:name,Status:status,Version:version}" `
+  --output table
+```
+
+Check managed node groups:
+
+```powershell
+aws eks list-nodegroups `
+  --region ap-south-1 `
+  --cluster-name testing_k8s
+```
+
+### Kubernetes resources
+
+The application environment used the `dev` namespace:
+
+```powershell
+kubectl get all -n dev
+kubectl get deployments -n dev
+kubectl get pods -n dev -o wide
+kubectl get services -n dev
+kubectl get pvc -n dev
+kubectl get pv
+```
+
+Inspect the storage class:
+
+```powershell
+kubectl get storageclass
+kubectl describe storageclass efs-sc
+```
+
+Inspect the MySQL workload:
+
+```powershell
+kubectl get statefulset -n dev
+kubectl get pods -n dev
+kubectl describe pod mysql-0 -n dev
+```
+
+## 5. Deploy the Application
+
+The application was deployed to the `dev` namespace with a Django Deployment and a MySQL StatefulSet.
+
+### Check the namespace and resources
+
+```powershell
+kubectl get namespace
+kubectl get all -n dev
+kubectl get secrets -n dev
+kubectl get configmaps -n dev
+```
+
+Sensitive values should be stored in Kubernetes Secrets or an appropriate secrets manager, not committed to GitHub.
+
+### Check MySQL
+
+```powershell
+kubectl get statefulset mysql -n dev
+kubectl get pod mysql-0 -n dev
+kubectl get service mysql-service -n dev
+kubectl logs mysql-0 -n dev --tail=100
+```
+
+The database configuration used these logical values:
+
+```text
+DB_NAME=django_crud
+DB_HOST=mysql-service
+DB_PORT=3306
+DB_USER=root
+```
+
+The database password is read from `mysql-secret`. Do not put the actual password in this README.
+
+### Check Django
+
+```powershell
+kubectl get deployment django-deployment -n dev
+kubectl rollout status deployment/django-deployment -n dev
+kubectl get pods -n dev -o wide
+kubectl logs deployment/django-deployment -n dev --tail=100
+```
+
+Check the service:
+
+```powershell
+kubectl get service django-service -n dev
+kubectl describe service django-service -n dev
+```
+
+### Access the application with port forwarding
+
+If `django-service` is a ClusterIP service, forward its port to your local machine:
+
+```powershell
+kubectl port-forward service/django-service 8000:8000 -n dev
+```
+
+Keep that terminal running, then open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+Test the endpoint:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8000/ -UseBasicParsing
+```
+
+Stop port forwarding with `Ctrl+C`.
+
+### Update the image
+
+After building and pushing a new image, update the Deployment with the correct ECR URI and tag:
+
+```powershell
+kubectl set image deployment/django-deployment `
+  <container-name>=<AWS_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/python_web_application:<image-tag> `
+  -n dev
+```
+
+Replace `<container-name>` with the container name from the Deployment specification.
+
+Verify the rollout:
+
+```powershell
+kubectl rollout status deployment/django-deployment -n dev
+kubectl rollout history deployment/django-deployment -n dev
+```
+
+If needed, return to a previous revision:
+
+```powershell
+kubectl rollout undo deployment/django-deployment -n dev
+```
+
+## 6. Jenkins CI/CD Pipeline
+
+The Jenkins pipeline was used to automate application delivery.
+
+The workflow is:
+
+1. Retrieve source code from GitHub.
+2. Build the Docker image.
+3. Authenticate to Amazon ECR.
+4. Push the image to ECR.
+5. Update the Kubernetes Deployment.
+6. Verify the rollout.
+
+The Jenkins job used for the project was named `django-devops-pipeline`.
+
+### Validate the Jenkins host
+
+Run these commands on the Jenkins EC2 instance:
+
 ```bash
-cd Terraform
-terraform init
+whoami
+git --version
+docker --version
+aws --version
+kubectl version --client
+```
+
+Confirm AWS credentials and permissions:
+
+```bash
+aws sts get-caller-identity
+aws configure get region
+```
+
+The Jenkins instance needs the correct IAM permissions to push to ECR and deploy to EKS. Avoid storing long-lived AWS access keys in a Jenkinsfile.
+
+### ECR login
+
+Run on the Jenkins host after setting the correct AWS region and account ID:
+
+```bash
+export AWS_REGION=ap-south-1
+export AWS_ACCOUNT_ID=<AWS_ACCOUNT_ID>
+export ECR_REPOSITORY=python_web_application
+
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login \
+      --username AWS \
+      --password-stdin \
+      "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+```
+
+### Build and push an image
+
+Run from the directory containing the application's Dockerfile:
+
+```bash
+docker build -t "$ECR_REPOSITORY:$BUILD_NUMBER" .
+```
+
+Tag the image:
+
+```bash
+docker tag "$ECR_REPOSITORY:$BUILD_NUMBER" \
+  "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$BUILD_NUMBER"
+```
+
+Push it to ECR:
+
+```bash
+docker push \
+  "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$BUILD_NUMBER"
+```
+
+These commands assume that the ECR repository already exists and that the Jenkins IAM role has the required permissions.
+
+### Verify the ECR image
+
+```bash
+aws ecr describe-images \
+  --region ap-south-1 \
+  --repository-name python_web_application
+```
+
+### Verify deployment permissions
+
+```bash
+kubectl auth can-i patch deployments -n dev
+kubectl auth can-i watch deployments -n dev
+kubectl auth can-i get pods -n dev
+```
+
+The Jenkins deployment identity must be authorized in the EKS cluster. Verify its role mapping and Kubernetes RBAC configuration when rebuilding.
+
+## 7. Prometheus and Grafana Monitoring
+
+Prometheus and Grafana were installed on a dedicated EC2 instance during the project.
+
+- **Prometheus:** collects metrics from configured scrape targets.
+- **Grafana:** visualizes metrics using Prometheus as a data source.
+
+### Check services on the monitoring EC2 instance
+
+Connect to the monitoring server using your own current SSH key and instance address.
+
+Check Prometheus:
+
+```bash
+sudo systemctl status prometheus
+```
+
+Check Grafana:
+
+```bash
+sudo systemctl status grafana-server
+```
+
+If a service is stopped, inspect its logs before restarting it:
+
+```bash
+sudo journalctl -u prometheus -n 100 --no-pager
+sudo journalctl -u grafana-server -n 100 --no-pager
+```
+
+Restart when appropriate:
+
+```bash
+sudo systemctl restart prometheus
+sudo systemctl restart grafana-server
+```
+
+### Check Prometheus configuration
+
+The configuration file is commonly located at:
+
+```text
+/etc/prometheus/prometheus.yml
+```
+
+Open it:
+
+```bash
+sudo nano /etc/prometheus/prometheus.yml
+```
+
+A basic Prometheus scrape configuration is:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+```
+
+Save the file, validate it if the Prometheus configuration-check utility is installed, and restart Prometheus:
+
+```bash
+sudo systemctl restart prometheus
+sudo systemctl status prometheus
+```
+
+### Optional: monitor Node Exporter
+
+Node Exporter exposes Linux host metrics, typically on port `9100`. It must be installed and running before adding it as a scrape target.
+
+After installation, add the following under `scrape_configs` in `prometheus.yml`:
+
+```yaml
+  - job_name: node_exporter
+    static_configs:
+      - targets: ['localhost:9100']
+```
+
+Restart Prometheus:
+
+```bash
+sudo systemctl restart prometheus
+```
+
+Verify the exporter endpoint locally:
+
+```bash
+curl http://localhost:9100/metrics
+```
+
+In the Prometheus web interface, open **Status → Targets** and verify that the `node_exporter` target is `UP`.
+
+This target configuration is valid when Node Exporter runs on the same host as Prometheus. If the exporter runs on a different machine, use a reachable address instead.
+
+### Grafana setup
+
+Open Grafana at:
+
+```text
+http://<MONITORING_PUBLIC_IP>:3000/
+```
+
+In Grafana:
+
+1. Open **Connections → Data sources**.
+2. Add a Prometheus data source.
+3. Set the URL to `http://localhost:9090` when Prometheus and Grafana run on the same EC2 host.
+4. Select **Save & Test**.
+5. Create a dashboard and add Prometheus queries.
+
+Example PromQL query:
+
+```promql
+up
+```
+
+To show the number of successful scrape targets:
+
+```promql
+sum(up)
+```
+
+Do not expose Grafana or Prometheus publicly without appropriate access controls. Prefer restricted security-group rules, secure authentication, and private networking.
+
+## 8. Validation and Troubleshooting
+
+### Terraform
+
+```powershell
+terraform fmt -recursive
+terraform validate
 terraform plan
-terraform apply -auto-approve
+terraform state list
 ```
 
-This will create:
-- VPC with public/private subnets
-- EKS cluster
-- ECR repository
-- EFS file system
-- EC2 instance for Jenkins
-- Route 53 hosted zone
-- ACM certificate
+Always inspect the plan before applying changes.
 
-#### Step 3: Configure kubectl
-```bash
-aws eks update-kubeconfig --region ap-southeast-1 --name your-eks-cluster-name
-kubectl get nodes
+### Kubernetes
+
+```powershell
+kubectl get pods -n dev
+kubectl describe pod <pod-name> -n dev
+kubectl logs <pod-name> -n dev --tail=100
+kubectl get events -n dev --sort-by=.metadata.creationTimestamp
 ```
 
-### Phase 2: Jenkins Setup
+For a Deployment:
 
-#### Step 1: Connect to Jenkins Server
-```bash
-# Get the public IP of your Jenkins EC2 instance
-aws ec2 describe-instances --filters "Name=tag:Name,Values=Jenkins-Server" --query 'Reservations[].Instances[].PublicIpAddress' --output text
-
-# SSH to the server
-ssh -i your-key.pem ubuntu@<jenkins-public-ip>
+```powershell
+kubectl describe deployment django-deployment -n dev
+kubectl rollout status deployment/django-deployment -n dev
+kubectl rollout history deployment/django-deployment -n dev
 ```
 
-#### Step 2: Install Jenkins
-Follow the installation guide in `Install and Configuration/Jenkins, Docker and AWS CLi installation.txt`
+### Common problems
 
-#### Step 3: Configure Jenkins Credentials
-1. Access Jenkins UI (http://jenkins-public-ip:8080)
-2. Add GitHub token as credential:
-   - Go to Manage Jenkins > Credentials > System > Global credentials
-   - Add new credential:
-     - Kind: Secret text
-     - ID: GITHUB_TOKEN
-     - Secret: Your GitHub personal access token
+| Problem | Useful checks |
+|---|---|
+| Pod stuck in `Pending` | `kubectl describe pod <pod-name> -n dev` |
+| Container restarting | `kubectl logs <pod-name> -n dev --previous` |
+| Django cannot connect to MySQL | Check `DB_HOST`, Service DNS, Secret, and MySQL logs |
+| `ImagePullBackOff` | Verify ECR URI/tag, IAM permissions, and image availability |
+| Jenkins cannot deploy | Check `kubectl` installation, EKS access, and RBAC |
+| Terraform shows unexpected changes | Inspect `terraform plan`, backend configuration, and current AWS resources |
+| Prometheus target is down | Check the target address, service status, port, and security-group rules |
+| Grafana cannot query Prometheus | Check the data-source URL and Prometheus service |
 
-#### Step 4: Create Jenkins Pipeline
-1. Create new Pipeline job
-2. Configure webhook trigger from GitHub
-3. Use the Jenkinsfile from `Jenkins_cicd/Jenkinsfile`
+### Inspect AWS resources
 
-### Phase 3: ArgoCD Setup
-
-#### Step 1: Install ArgoCD
-```bash
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```powershell
+aws sts get-caller-identity
+aws ec2 describe-instances --region ap-south-1
+aws eks list-clusters --region ap-south-1
+aws ecr describe-repositories --region ap-south-1
+aws rds describe-db-instances --region ap-south-1
 ```
 
-#### Step 2: Access ArgoCD UI
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-# Access https://localhost:8080
-# Default username: admin
-# Get password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
+## Security Best Practices
 
-#### Step 3: Create ArgoCD Application
-1. Create application pointing to your GitOps repository
-2. Set path to `Kubernetes with ArgoCD/`
-3. Enable auto-sync
+- Never commit AWS credentials, `.pem` keys, database passwords, or tokens.
+- Keep Terraform state private; it can contain sensitive information.
+- Use IAM roles instead of long-lived access keys wherever possible.
+- Restrict SSH, Jenkins, Grafana, and Prometheus access.
+- Store application secrets outside source code.
+- Review Terraform plans before applying changes.
+- Use least-privilege IAM and Kubernetes RBAC permissions.
+- Remove unused cloud resources when finished testing.
 
-### Phase 4: Application Deployment
+## Project Status
 
-#### Step 1: Update Configuration
-1. Update image references in Kubernetes manifests
-2. Configure database credentials in secrets
-3. Update domain name in ingress configuration
+This project was implemented and tested in stages, including local Django validation, Docker image builds, Terraform-managed AWS infrastructure, EKS deployment, Jenkins-based image delivery, and Prometheus/Grafana setup.
 
-#### Step 2: Deploy Application
-```bash
-kubectl apply -f "Kubernetes with ArgoCD/"
-```
+The AWS infrastructure was subsequently cleaned up to reduce ongoing costs. The project repository and local files remain available for future rebuilding and practice.
 
-### Phase 5: Monitoring Setup
+Some advanced components—such as a complete ArgoCD GitOps workflow, public ingress/domain configuration, and fully verified Node Exporter monitoring—are not represented as completed features.
 
-#### Step 1: Install Prometheus
-```bash
-kubectl create namespace monitoring
-kubectl apply -f "Install and Configuration/prometheus yml file.txt"
-```
+## Author
 
-#### Step 2: Install Grafana
-```bash
-kubectl apply -f "Install and Configuration/Grafana installation.txt"
-```
+**Ayush Kamble**
 
-#### Step 3: Configure Dashboards
-1. Access Grafana (port-forward or ingress)
-2. Import Prometheus as data source
-3. Import monitoring dashboards
+- GitHub: [Aayush024](https://github.com/Aayush024)
+- Project repository: [End-to-End-DevOps-Project](https://github.com/Aayush024/End-to-End-DevOps-Project)
 
-## 📊 Monitoring & Alerts
-
-### Prometheus Configuration
-- Metrics collection from Kubernetes pods
-- Custom metrics for application health
-- Alert rules for critical failures
-
-### Grafana Dashboards
-- Kubernetes cluster overview
-- Application performance metrics
-- Database monitoring
-- Jenkins pipeline status
-
-### Alert Configuration
-- Email alerts for pipeline failures
-- Service health monitoring
-- Resource utilization alerts
-
-## 🔧 Configuration Files
-
-### Key Configuration Files:
-- `Terraform/` - Infrastructure as Code
-- `Jenkins_cicd/Jenkinsfile` - CI/CD pipeline
-- `Kubernetes with ArgoCD/` - Kubernetes manifests
-- `Install and Configuration/` - Setup scripts and configs
-
-### Environment Variables:
-```bash
-AWS_REGION=ap-southeast-1
-AWS_ACCOUNT_ID=your-account-id
-GITHUB_TOKEN=your-github-token
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues:
-
-#### 1. Terraform Backend Issues
-```bash
-# If S3 backend doesn't exist
-aws s3 mb s3://terraform-devops-backend-file --region ap-southeast-1
-```
-
-#### 2. EKS Connection Issues
-```bash
-# Update kubeconfig
-aws eks update-kubeconfig --region ap-southeast-1 --name your-cluster-name
-```
-
-#### 3. Jenkins Pipeline Failures
-- Check GitHub token permissions
-- Verify ECR repository access
-- Ensure Docker is running on Jenkins server
-
-#### 4. ArgoCD Sync Issues
-- Verify GitOps repository access
-- Check Kubernetes manifest syntax
-- Review ArgoCD application logs
-
-#### 5. Application Deployment Issues
-```bash
-# Check pod status
-kubectl get pods -n default
-
-# Check pod logs
-kubectl logs <pod-name>
-
-# Check events
-kubectl get events --sort-by='.lastTimestamp'
-```
-
-### Useful Commands:
-```bash
-# Check EKS cluster status
-aws eks describe-cluster --name your-cluster-name --region ap-southeast-1
-
-# List ECR repositories
-aws ecr describe-repositories --region ap-southeast-1
-
-# Check EFS mount targets
-aws efs describe-mount-targets --file-system-id your-efs-id
-
-# Monitor Jenkins logs
-sudo journalctl -u jenkins -f
-
-# Check ArgoCD application status
-kubectl get applications -n argocd
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the GitHub repository
-- Check the troubleshooting section above
-- Review the configuration files for reference
-
----
-
-**Note**: This project is for educational and demonstration purposes. Please review and modify configurations according to your specific requirements and security policies before using in production environments.
